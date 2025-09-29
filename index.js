@@ -1,20 +1,18 @@
-require('dotenv').config();
-const venom = require('venom-bot');
-const fs = require('fs');
-const { Configuration, OpenAIApi } = require('openai');
-const os = require('os');
-const axios = require('axios');
+import 'dotenv/config';
+import venom from 'venom-bot';
+import fs from 'fs';
+import os from 'os';
+import axios from 'axios';
+import OpenAI from 'openai';
 
-const OPENAI_KEY = process.env.OPENAI_API_KEY;
-const configuration = new Configuration({ apiKey: OPENAI_KEY });
-const openai = new OpenAIApi(configuration);
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 // ---------------------
 // Persistent variables
 // ---------------------
 const VAR_FILE = './variables.json';
 let variables = {};
-if(fs.existsSync(VAR_FILE)) variables = JSON.parse(fs.readFileSync(VAR_FILE));
+if (fs.existsSync(VAR_FILE)) variables = JSON.parse(fs.readFileSync(VAR_FILE, 'utf8'));
 
 function saveVars() {
   fs.writeFileSync(VAR_FILE, JSON.stringify(variables, null, 2));
@@ -30,14 +28,13 @@ let chatbotEnabled = true; // AI chatbot ON by default
 // Start bot
 // ---------------------
 venom.create({
-    session: 'sessions/prick',   // store session in sessions folder
+    session: 'sessions/prick', // store session in sessions folder
     multidevice: true
 })
 .then(client => start(client))
 .catch(err => console.error(err));
 
 function start(client) {
-
   client.onMessage(async message => {
     const msg = message.body.trim();
     const from = message.from;
@@ -45,11 +42,11 @@ function start(client) {
     // ---------------------
     // Chatbot toggle
     // ---------------------
-    if(msg === '.chatbot off') {
+    if (msg === '.chatbot off') {
       chatbotEnabled = false;
       return client.sendText(from, '🤖 Chatbot is now OFF');
     }
-    if(msg === '.chatbot on') {
+    if (msg === '.chatbot on') {
       chatbotEnabled = true;
       return client.sendText(from, '🤖 Chatbot is now ON');
     }
@@ -57,19 +54,20 @@ function start(client) {
     // ---------------------
     // AI Chatbot
     // ---------------------
-    if(msg.startsWith('.chatbot')) {
-      if(!chatbotEnabled) return client.sendText(from, '❌ Chatbot is OFF');
+    if (msg.startsWith('.chatbot')) {
+      if (!chatbotEnabled) return client.sendText(from, '❌ Chatbot is OFF');
       const prompt = msg.slice(9).trim();
-      if(!prompt) return client.sendText(from, 'Send a message after .chatbot');
+      if (!prompt) return client.sendText(from, 'Send a message after .chatbot');
       try {
-        const response = await openai.createChatCompletion({
+        const response = await openai.chat.completions.create({
           model: 'gpt-3.5-turbo',
           messages: [{ role: 'user', content: prompt }],
           temperature: 0.7,
           max_tokens: 500
         });
-        await client.sendText(from, response.data.choices[0].message.content);
-      } catch {
+        await client.sendText(from, response.choices[0].message.content);
+      } catch (err) {
+        console.error(err);
         await client.sendText(from, '❌ Error contacting AI');
       }
     }
@@ -77,36 +75,36 @@ function start(client) {
     // ---------------------
     // AFK
     // ---------------------
-    if(msg.startsWith('.afk')) {
+    if (msg.startsWith('.afk')) {
       afkUsers[from] = true;
       return client.sendText(from, '🌙 You are now AFK');
     }
-    if(msg.startsWith('.afkadmin')) {
+    if (msg.startsWith('.afkadmin')) {
       afkUsers[from] = false;
       return client.sendText(from, '✅ AFK disabled');
     }
-    if(afkUsers[from]) {
+    if (afkUsers[from]) {
       await client.sendText(from, '🌙 You are currently AFK');
     }
 
     // ---------------------
     // Variable commands
     // ---------------------
-    if(msg.startsWith('.setvar')) {
+    if (msg.startsWith('.setvar')) {
       const [_, key, ...val] = msg.split(' ');
-      if(!key || val.length===0) return client.sendText(from, 'Usage: .setvar key value');
+      if (!key || val.length === 0) return client.sendText(from, 'Usage: .setvar key value');
       variables[key] = val.join(' ');
       saveVars();
       return client.sendText(from, `✅ Variable ${key} set to "${val.join(' ')}"`);
     }
-    if(msg.startsWith('.getvar')) {
+    if (msg.startsWith('.getvar')) {
       const [_, key] = msg.split(' ');
-      if(!key) return client.sendText(from, 'Usage: .getvar key');
+      if (!key) return client.sendText(from, 'Usage: .getvar key');
       return client.sendText(from, variables[key] || `❌ Variable ${key} not found`);
     }
-    if(msg.startsWith('.delvar')) {
+    if (msg.startsWith('.delvar')) {
       const [_, key] = msg.split(' ');
-      if(!key) return client.sendText(from, 'Usage: .delvar key');
+      if (!key) return client.sendText(from, 'Usage: .delvar key');
       delete variables[key];
       saveVars();
       return client.sendText(from, `✅ Variable ${key} deleted`);
@@ -115,41 +113,39 @@ function start(client) {
     // ---------------------
     // Alive & Info
     // ---------------------
-    if(msg === '.alive') {
+    if (msg === '.alive') {
       await client.sendText(from, getSystemInfo());
       await client.sendText(from, getGeneralMenu());
     }
-    if(msg === '.info') {
+    if (msg === '.info') {
       return client.sendText(from, `🤖 Prick bot with AI\nOwner: Iyii\nVersion: 6.2.4`);
     }
 
     // ---------------------
     // YouTube / media commands
     // ---------------------
-    if(['.ytv','.yta','.play','.song','.video'].includes(msg.split(' ')[0])) {
+    if (['.ytv', '.yta', '.play', '.song', '.video'].includes(msg.split(' ')[0])) {
       return client.sendText(from, '🔧 Media commands coming soon!');
     }
 
     // ---------------------
     // Media manipulation
     // ---------------------
-    if(['.gif','.rotate','.flip'].includes(msg.split(' ')[0])) {
+    if (['.gif', '.rotate', '.flip'].includes(msg.split(' ')[0])) {
       return client.sendText(from, '🔧 Media effects coming soon!');
     }
 
     // ---------------------
     // Admin/system commands
     // ---------------------
-    if(msg === '.reboot' || msg === '.reload') return client.sendText(from, '⚡ Bot rebooted (simulated)');
-    if(msg === '.mention') return client.sendText(from, '⚡ Mention command placeholder');
-    if(msg === '.list') return client.sendText(from, '⚡ List command placeholder');
-    if(msg === '.del') return client.sendText(from, '⚡ Delete command placeholder');
+    if (msg === '.reboot' || msg === '.reload') return client.sendText(from, '⚡ Bot rebooted (simulated)');
+    if (msg === '.mention') return client.sendText(from, '⚡ Mention command placeholder');
+    if (msg === '.list') return client.sendText(from, '⚡ List command placeholder');
+    if (msg === '.del') return client.sendText(from, '⚡ Delete command placeholder');
 
     // ---------------------
     // Placeholder for other 35 commands
     // ---------------------
-    // You can expand here for extra commands
-
   });
 
   console.log('🤖 Prick bot with 35 commands online!');
@@ -166,7 +162,7 @@ function getSystemInfo() {
 ┃✦│ User : iyii
 ┃✦│ Mode : private
 ┃✦│ Server : ${os.type()}
-┃✦│ Available RAM : ${Math.floor(os.freemem()/1024/1024)} MB of ${Math.floor(os.totalmem()/1024/1024)} MB
+┃✦│ Available RAM : ${Math.floor(os.freemem() / 1024 / 1024)} MB of ${Math.floor(os.totalmem() / 1024 / 1024)} MB
 ┃✦│ Total Users : 3
 ┃✦│ Version : 6.2.4
 ┃✦╰───────────────
