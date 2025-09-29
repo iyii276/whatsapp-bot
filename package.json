@@ -1,0 +1,19 @@
+{
+  "name": "prick-bot",
+  "version": "1.0.0",
+  "description": "Prick WhatsApp bot with AI and 35 commands",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "keywords": ["whatsapp", "bot", "venom-bot", "openai", "ai"],
+  "author": "Iyii",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.6.6",
+    "dotenv": "^16.3.1",
+    "node-fetch": "^3.4.0",
+    "openai": "^4.30.0",
+    "venom-bot": "^4.0.2"
+  }
+}
