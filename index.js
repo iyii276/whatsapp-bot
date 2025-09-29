@@ -1,10 +1,10 @@
 require('dotenv').config();
 const venom = require('venom-bot');
 const fs = require('fs');
-const { OpenAI } = require('openai'); // use new import style
+const { OpenAI } = require('openai'); 
 const os = require('os');
 const axios = require('axios');
-const express = require('express'); // for dummy web server
+const express = require('express');
 
 const OPENAI_KEY = process.env.OPENAI_API_KEY;
 const openai = new OpenAI({ apiKey: OPENAI_KEY });
@@ -24,14 +24,19 @@ function saveVars() {
 // Bot states
 // ---------------------
 let afkUsers = {};
-let chatbotEnabled = true; // AI chatbot ON by default
+let chatbotEnabled = true;
 
 // ---------------------
-// Start bot
+// Start bot with QR logging
 // ---------------------
 venom.create({
-    session: 'sessions/prick',   // store session in sessions folder
-    multidevice: true
+    session: 'sessions/prick',
+    multidevice: true,
+    headless: true,
+    logQR: true,           // ✅ Print QR in console
+    qrRefreshS: 15,        // refresh QR every 15 seconds
+    disableSpins: true,
+    throwErrorOnTosBlock: true
 })
 .then(client => start(client))
 .catch(err => console.error(err));
@@ -41,9 +46,7 @@ function start(client) {
         const msg = message.body.trim();
         const from = message.from;
 
-        // ---------------------
-        // Chatbot toggle
-        // ---------------------
+        // --------------------- Chatbot toggle ---------------------
         if (msg === '.chatbot off') {
             chatbotEnabled = false;
             return client.sendText(from, '🤖 Chatbot is now OFF');
@@ -53,9 +56,7 @@ function start(client) {
             return client.sendText(from, '🤖 Chatbot is now ON');
         }
 
-        // ---------------------
-        // AI Chatbot
-        // ---------------------
+        // --------------------- AI Chatbot ---------------------
         if (msg.startsWith('.chatbot')) {
             if (!chatbotEnabled) return client.sendText(from, '❌ Chatbot is OFF');
             const prompt = msg.slice(9).trim();
@@ -73,9 +74,7 @@ function start(client) {
             }
         }
 
-        // ---------------------
-        // AFK
-        // ---------------------
+        // --------------------- AFK ---------------------
         if (msg.startsWith('.afk')) {
             afkUsers[from] = true;
             return client.sendText(from, '🌙 You are now AFK');
@@ -88,9 +87,7 @@ function start(client) {
             await client.sendText(from, '🌙 You are currently AFK');
         }
 
-        // ---------------------
-        // Variable commands
-        // ---------------------
+        // --------------------- Variable commands ---------------------
         if (msg.startsWith('.setvar')) {
             const [_, key, ...val] = msg.split(' ');
             if (!key || val.length === 0) return client.sendText(from, 'Usage: .setvar key value');
@@ -111,9 +108,7 @@ function start(client) {
             return client.sendText(from, `✅ Variable ${key} deleted`);
         }
 
-        // ---------------------
-        // Alive & Info
-        // ---------------------
+        // --------------------- Alive & Info ---------------------
         if (msg === '.alive') {
             await client.sendText(from, getSystemInfo());
             await client.sendText(from, getGeneralMenu());
@@ -122,9 +117,7 @@ function start(client) {
             return client.sendText(from, `🤖 Prick bot with AI\nOwner: Iyii\nVersion: 6.2.4`);
         }
 
-        // ---------------------
-        // Placeholder commands
-        // ---------------------
+        // --------------------- Placeholder commands ---------------------
         if (['.ytv','.yta','.play','.song','.video'].includes(msg.split(' ')[0])) {
             return client.sendText(from, '🔧 Media commands coming soon!');
         }
@@ -140,9 +133,7 @@ function start(client) {
     console.log('🤖 Prick bot with 35 commands online!');
 }
 
-// ---------------------
-// System Info & Menu
-// ---------------------
+// --------------------- System Info & Menu ---------------------
 function getSystemInfo() {
     return `
 ╭═══〘 Prick 〙═══⊷❍
@@ -192,9 +183,7 @@ function getGeneralMenu() {
 ╰══════════════════⊷❍`;
 }
 
-// ---------------------
-// Dummy web server so Render detects a port
-// ---------------------
+// --------------------- Dummy web server ---------------------
 const app = express();
 const PORT = process.env.PORT || 3000;
 app.get('/', (req, res) => res.send('Prick bot is running!'));
